@@ -12,7 +12,8 @@ public class HadoopConfig {
     @Bean
     public FileSystem hdfsFileSystem() throws IOException {
         Configuration conf = new Configuration();
-        conf.set("fs.defaultFS", "hdfs://192.168.170.111:9870");
+        conf.set("fs.defaultFS", "hdfs://localhost:9000");
+        conf.set("hadoop.home.dir", "/usr/local/hadoop");
         return FileSystem.get(conf);
     }
 }
