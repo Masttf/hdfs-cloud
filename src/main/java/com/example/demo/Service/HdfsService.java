@@ -2,6 +2,7 @@ package com.example.demo.Service;
 
 import lombok.SneakyThrows;
 
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -24,10 +25,23 @@ public class HdfsService {
     public void uploadFile(MultipartFile file, String hdfsPath) {
         try (InputStream inputStream = file.getInputStream()) {
             Path path = new Path(hdfsPath + "/" + file.getOriginalFilename());
-            fileSystem.copyFromLocalFile(new Path(inputStream.toString()), path);
+            // 使用 create 方法创建文件并写入数据
+            try (FSDataOutputStream outputStream = fileSystem.create(path)) {
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+            }
         }
     }
 
+    @SneakyThrows
+    public boolean createDir(String hdfsPath) {
+        Path path = new Path(hdfsPath);
+        return fileSystem.mkdirs(path);
+    }
+    
     // 下载文件
     @SneakyThrows
     public InputStream downloadFile(String hdfsFilePath) {

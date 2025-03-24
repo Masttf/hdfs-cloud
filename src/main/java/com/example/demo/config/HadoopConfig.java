@@ -5,15 +5,14 @@ import org.apache.hadoop.fs.FileSystem;
 import org.springframework.context.annotation.Bean;
 
 import java.io.IOException;
-import java.net.URI;
 
 @org.springframework.context.annotation.Configuration
 public class HadoopConfig {
 
     @Bean
-    public FileSystem hdfsFileSystem() throws IOException, InterruptedException {
+    public FileSystem hdfsFileSystem() throws IOException {
         Configuration conf = new Configuration();
-        conf.set("dfs.replication", "1"); // 副本数设为1（测试环境）
-        return FileSystem.get(URI.create("hdfs://localhost:9000"), conf, "your_username");
+        conf.set("fs.defaultFS", "hdfs://192.168.170.111:9870");
+        return FileSystem.get(conf);
     }
 }
