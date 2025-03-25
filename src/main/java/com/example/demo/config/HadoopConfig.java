@@ -13,7 +13,7 @@ public class HadoopConfig {
     public FileSystem hdfsFileSystem() throws IOException {
         Configuration conf = new Configuration();
         conf.set("fs.defaultFS", "hdfs://localhost:9000");
-        conf.set("hadoop.home.dir", "/usr/local/hadoop");
+        conf.set("hadoop.home.dir", "/usr/local/hadoop"); //hadoop安装路径
         return FileSystem.get(conf);
     }
 }

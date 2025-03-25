@@ -12,6 +12,9 @@ import com.example.demo.Service.HdfsService;
 
 import java.io.InputStream;
 import java.util.List;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 @RestController
 @RequestMapping("/api/hdfs")
@@ -29,6 +32,15 @@ public class HdfsController {
         return "Upload success!";
     }
 
+    @PostMapping("/mkdir")
+    public String mkdir(@RequestBody String filePath) {
+        if(hdfsService.createDir(filePath)){
+            return "创建目录成功";
+        }else{
+            return "创建目录失败";
+        }
+    }
+    
     // 下载文件
     @GetMapping("/download")
     public ResponseEntity<InputStreamResource> downloadFile(@RequestParam String hdfsFilePath) {
@@ -44,6 +56,7 @@ public class HdfsController {
     // 列出文件目录
     @GetMapping("/list")
     public List<String> listFiles(@RequestParam(defaultValue = "/cloud_disk") String hdfsDir) {
+        System.out.println("getList: " + hdfsDir);
         return hdfsService.listFiles(hdfsDir);
     }
 
