@@ -64,7 +64,7 @@ public class HdfsService {
 
     // 删除文件
     @SneakyThrows
-    public void deleteFile(String hdfsFilePath) {
+    public void deletePath(String hdfsFilePath) {
         fileSystem.delete(new Path(hdfsFilePath), true);
     }
 }

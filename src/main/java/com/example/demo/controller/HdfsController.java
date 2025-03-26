@@ -12,9 +12,19 @@ import com.example.demo.Service.HdfsService;
 
 import java.io.InputStream;
 import java.util.List;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
+class MyPath {
+    private String path;
+
+    public String getPath() {
+        return path;
+    }
+    
+    public void setPath(String path) {
+        this.path = path;
+    }
+    
+}
 
 @RestController
 @RequestMapping("/api/hdfs")
@@ -24,17 +34,19 @@ public class HdfsController {
     private HdfsService hdfsService;
 
     // 上传文件
-    @PostMapping("/upload")
+    @PostMapping( value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public String uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(defaultValue = "/cloud_disk") String hdfsPath) {
+        System.out.println(file + " path: " + hdfsPath);
         hdfsService.uploadFile(file, hdfsPath);
         return "Upload success!";
     }
 
     @PostMapping("/mkdir")
-    public String mkdir(@RequestBody String filePath) {
-        if(hdfsService.createDir(filePath)){
+    public String mkdir(@RequestBody MyPath myPath) {
+        System.out.println("mkdir: " + myPath.getPath());
+        if(hdfsService.createDir(myPath.getPath())){
             return "创建目录成功";
         }else{
             return "创建目录失败";
@@ -46,7 +58,7 @@ public class HdfsController {
     public ResponseEntity<InputStreamResource> downloadFile(@RequestParam String hdfsFilePath) {
         InputStream inputStream = hdfsService.downloadFile(hdfsFilePath);
         String fileName = hdfsFilePath.substring(hdfsFilePath.lastIndexOf("/") + 1);
-
+        
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
@@ -61,9 +73,10 @@ public class HdfsController {
     }
 
     // 删除文件
-    @DeleteMapping("/delete")
-    public String deleteFile(@RequestParam String hdfsFilePath) {
-        hdfsService.deleteFile(hdfsFilePath);
+    @PostMapping("/delete")
+    public String deletePath(@RequestBody MyPath myPath) {
+        System.out.println("delete: " + myPath.getPath());
+        hdfsService.deletePath(myPath.getPath());
         return "Delete success!";
     }
 }
