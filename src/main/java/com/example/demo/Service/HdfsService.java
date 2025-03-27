@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import com.example.demo.entity.fileInfo;
 
 @Service
 public class HdfsService {
@@ -51,12 +52,16 @@ public class HdfsService {
 
     // 列出目录文件
     @SneakyThrows
-    public List<String> listFiles(String hdfsDir) {
-        List<String> files = new ArrayList<>();
+    public List<fileInfo> listFiles(String hdfsDir) {
+        List<fileInfo> files = new ArrayList<>();
         FileStatus[] fileStatuses = fileSystem.listStatus(new Path(hdfsDir));
         if (fileStatuses != null) { // 防止空指针异常
             for (FileStatus status : fileStatuses) {
-                files.add(status.getPath().getName());
+                files.add(new fileInfo(
+                    status.getPath().getName(),
+                    status.isDirectory(),
+                    status.getLen()
+                ));
             }
         }
         return files;
@@ -66,5 +71,17 @@ public class HdfsService {
     @SneakyThrows
     public void deletePath(String hdfsFilePath) {
         fileSystem.delete(new Path(hdfsFilePath), true);
+    }
+
+    // 获取文件元数据
+    @SneakyThrows
+    public fileInfo getFileMetadata(String hdfsFilePath) {
+        Path path = new Path(hdfsFilePath);
+        FileStatus status = fileSystem.getFileStatus(path);
+        return new fileInfo(
+            status.getPath().getName(),
+            status.isDirectory(),
+            status.getLen()
+        );
     }
 }

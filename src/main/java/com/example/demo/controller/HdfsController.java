@@ -3,28 +3,19 @@ package com.example.demo.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import java.net.URI;
 
 import com.example.demo.Service.HdfsService;
-
+import com.example.demo.entity.*;
 import java.io.InputStream;
 import java.util.List;
 
-class MyPath {
-    private String path;
 
-    public String getPath() {
-        return path;
-    }
-    
-    public void setPath(String path) {
-        this.path = path;
-    }
-    
-}
 
 @RestController
 @RequestMapping("/api/hdfs")
@@ -34,49 +25,91 @@ public class HdfsController {
     private HdfsService hdfsService;
 
     // 上传文件
-    @PostMapping( value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public String uploadFile(
+    @PostMapping("/files")
+    public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(defaultValue = "/cloud_disk") String hdfsPath) {
-        System.out.println(file + " path: " + hdfsPath);
-        hdfsService.uploadFile(file, hdfsPath);
-        return "Upload success!";
+            @RequestParam(defaultValue = "/cloud_disk") String path) {
+        try {
+            hdfsService.uploadFile(file, path);
+            return ResponseEntity.created(URI.create("/api/hdfs/files?path=" + path + "/" + file.getOriginalFilename()))
+                    .body("{\"message\":\"File uploaded successfully\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"error\":\"File upload failed\"}");
+        }
     }
 
-    @PostMapping("/mkdir")
-    public String mkdir(@RequestBody MyPath myPath) {
-        System.out.println("mkdir: " + myPath.getPath());
-        if(hdfsService.createDir(myPath.getPath())){
-            return "创建目录成功";
-        }else{
-            return "创建目录失败";
+    // 创建目录
+    @PostMapping("/directories")
+    public ResponseEntity<?> createDirectory(@RequestBody myPath path) {
+        try {
+            boolean created = hdfsService.createDir(path.getPath());
+            if (created) {
+                return ResponseEntity.created(URI.create("/api/hdfs/directories?path=" + path.getPath()))
+                        .body("{\"message\":\"Directory created successfully\"}");
+            }
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("{\"error\":\"Directory already exists\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"error\":\"Directory creation failed\"}");
         }
     }
     
     // 下载文件
-    @GetMapping("/download")
-    public ResponseEntity<InputStreamResource> downloadFile(@RequestParam String hdfsFilePath) {
-        InputStream inputStream = hdfsService.downloadFile(hdfsFilePath);
-        String fileName = hdfsFilePath.substring(hdfsFilePath.lastIndexOf("/") + 1);
-        
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(new InputStreamResource(inputStream));
+    @GetMapping("/files")
+    public ResponseEntity<InputStreamResource> downloadFile(@RequestParam String path) {
+        try {
+            InputStream inputStream = hdfsService.downloadFile(path);
+            String fileName = path.substring(path.lastIndexOf("/") + 1);
+            
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(new InputStreamResource(inputStream));
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    // 列出文件目录
-    @GetMapping("/list")
-    public List<String> listFiles(@RequestParam(defaultValue = "/cloud_disk") String hdfsDir) {
-        System.out.println("getList: " + hdfsDir);
-        return hdfsService.listFiles(hdfsDir);
+    // 列出目录内容
+    @GetMapping("/contents")
+    public ResponseEntity<?> listDirectory(@RequestParam(defaultValue = "/cloud_disk") String path) {
+        try {
+            List<fileInfo> files = hdfsService.listFiles(path);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(files);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("{\"error\":\"Directory not found\"}");
+        }
     }
 
-    // 删除文件
-    @PostMapping("/delete")
-    public String deletePath(@RequestBody MyPath myPath) {
-        System.out.println("delete: " + myPath.getPath());
-        hdfsService.deletePath(myPath.getPath());
-        return "Delete success!";
+    // 删除文件或目录
+    @DeleteMapping
+    public ResponseEntity<?> deleteResource(@RequestBody myPath path) {
+        try {
+            hdfsService.deletePath(path.getPath());
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"error\":\"Deletion failed\"}");
+        }
+    }
+
+    // 获取文件元数据
+    @GetMapping("/metadata")
+    public ResponseEntity<?> getFileMetadata(@RequestParam String hdfsFilePath) {
+        try {
+            fileInfo metadata = hdfsService.getFileMetadata(hdfsFilePath);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(metadata);
+        } catch (Exception e) {
+            return ResponseEntity.status(404)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"error\":\"File not found\"}");
+        }
     }
 }
