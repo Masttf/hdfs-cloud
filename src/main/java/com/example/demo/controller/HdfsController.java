@@ -112,4 +112,18 @@ public class HdfsController {
                     .body("{\"error\":\"File not found\"}");
         }
     }
+
+    @GetMapping("/dir")
+    public ResponseEntity<?> isDirectoryExit(@RequestParam String hdfsDirPath) {
+        try {
+            boolean isExit = hdfsService.isDirectoryExit(hdfsDirPath);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(isExit);
+        } catch (Exception e) {
+            return ResponseEntity.status(404)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"error\":\"Dir not found\"}");
+        }
+    }
 }

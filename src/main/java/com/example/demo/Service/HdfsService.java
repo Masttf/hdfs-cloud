@@ -60,7 +60,8 @@ public class HdfsService {
                 files.add(new fileInfo(
                     status.getPath().getName(),
                     status.isDirectory(),
-                    status.getLen()
+                    status.getLen(),
+                    status.getModificationTime()
                 ));
             }
         }
@@ -81,7 +82,17 @@ public class HdfsService {
         return new fileInfo(
             status.getPath().getName(),
             status.isDirectory(),
-            status.getLen()
+            status.getLen(),
+            status.getModificationTime()
         );
+    }
+    public boolean isDirectoryExit(String hdfsDirPath){
+        try {
+            Path path = new Path(hdfsDirPath);
+            return fileSystem.exists(path);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
